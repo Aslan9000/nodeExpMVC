@@ -2,7 +2,9 @@ import axios from 'axios'
 
 export default class Registration {
   constructor(){
+    this._csrf = document.querySelector('[name="_csrf"]').value
     this.allLabels = document.querySelectorAll('#registrationform label');
+    this.form = document.querySelector('#registrationform');
     this.insertValidationElements();
     this.username = document.querySelector('#register-username');
     this.username.previousValue = "";
@@ -17,18 +19,42 @@ export default class Registration {
 
   // Events
   events(){
-      this.username.addEventListener('keyup', ()=>{
-        this.isDifferent(this.username, this.usernameHandler)
-      })
-      this.email.addEventListener('keyup', ()=>{
-        this.isDifferent(this.email, this.emailHandler)
-      })
-      this.password.addEventListener('keyup', ()=>{
-        this.isDifferent(this.password, this.passwordHandler)
-      })
+
+    this.form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      this.formSubmitHandler();
+    })
+    
+    this.username.addEventListener('keyup', ()=>{
+      this.isDifferent(this.username, this.usernameHandler)
+    })
+    this.email.addEventListener('keyup', ()=>{
+      this.isDifferent(this.email, this.emailHandler)
+    })
+    this.password.addEventListener('keyup', ()=>{
+      this.isDifferent(this.password, this.passwordHandler)
+    })
   }
 
   // Methods
+
+  formSubmitHandler(){
+    this.usernameImmediately();
+    this.usernameAfterDelay();
+    this.emailAfterDelay();
+    this.passwordImmediately();
+    this.passwordAfterDelay();
+    console.log(this.email.isUnique);
+    if(
+      this.username.isUnique &&
+      !this.username.errors &&
+      this.email.isUnique &&
+      !this.email.errors &&
+      !this.password.errors
+    ){
+      this.form.submit();
+    }
+  }
 
   insertValidationElements(){
     this.allLabels.forEach(function(label){
@@ -74,7 +100,7 @@ export default class Registration {
     // check if username is already taken
     if(!this.username.errors){
       try{
-        let exist = await axios.post('/doesUsernameExist', {username: this.username.value});
+        let exist = await axios.post('/doesUsernameExist', {username: this.username.value, _csrf: this._csrf});
         if(!exist){
           this.showValidationError(this.username, "That username is already taken.");
           this.username.isUnique = false;
@@ -82,7 +108,7 @@ export default class Registration {
           this.username.isUnique = true;
         }
       }catch(error){
-        throw error;
+        throw "registration.js usernameAfterDelay: " +  error;
       }
     }
   }
@@ -90,7 +116,7 @@ export default class Registration {
   emailHandler(){
     this.email.errors = false;
     clearTimeout(this.username.timer);
-    this.username.timer = setTimeout(()=> this.emailAfterDelay(), 800);
+    this.username.timer = setTimeout(()=> this.emailAfterDelay(), 1000);
   }
 
   async emailAfterDelay(){
@@ -101,8 +127,9 @@ export default class Registration {
     // check if email is already taken
     if(!this.email.errors){
       try{
-        let exist = await axios.post('doesEmailExist', {email: this.email.value});
-        if(exist){
+        let exist = await axios.post('doesEmailExist', {email: this.email.value, _csrf: this._csrf});
+        console.log("emailAfterDelay: " + exist);
+        if(!exist){
           this.showValidationError(this.email, "Email already belongs to a registered user.");
           this.email.isUnique = false;
         }else{
@@ -110,8 +137,10 @@ export default class Registration {
           this.hideValidationError(this.email);
         }
       }catch(err){
-        throw err;
+        throw "registration.js emailAfterDelay: " + err;
       }
+    }else{
+      console.log("emailAfterDelay, email errors prob");
     }
   }
 

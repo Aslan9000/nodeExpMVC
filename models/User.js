@@ -1,47 +1,87 @@
 const bcrypt = require("bcryptjs");
 const validator = require('validator');
 const usersCollection = require('../db').db('test').collection('users');
+const fs = require('fs');
+const { ObjectId } = require("mongodb");
 
 let User = function(data){
     this.data = data;
     this.errors = [];
+    this.avatar = false;
 };
 
-User.findByUsername = async function(username){
+// frontend
+User.findByUsername = async function(username) {
   if(typeof(username) != "string"){
-    throw "Please input a valid username."
-  }
-
-  try{
-    let userDoc = await usersCollection.findOne({username: username});
-    if(userDoc){
-      userDoc = new User(userDoc);
-      userDoc = {
-        _id: userDoc.data._id,
-        username: userDoc.data.username
+    try{
+      let userDoc = await usersCollection.findOne({username: username});
+      if(userDoc){
+        userDoc = new User(userDoc, true)
+        userDoc = {
+          _id: userDoc.data._id,
+          username: userDoc.data.username,
+          avatar: userDoc.avatar
+        }
       }
-      return userDoc;
+    }catch(err){
+      throw "User.findByUsername: " + err;
     }
-  }catch(err){
-    throw err;
   }
 }
 
-User.doesEmailExist = async function(email){
-  if(typeof(email) != "email"){
-    throw "Please input valid email."
+User.doesEmailExist = async function(email) {
+  if(typeof(email) != "string"){
+    return false;
   }
   try{
-    let emailDoc = await usersCollection.findOne({email: email});
-    if(emailDoc){
-      return true; 
+    let user = await usersCollection.findOne({email: email})
+    if(user){
+      return true;
     }else{
       return false;
     }
   }catch(err){
-    throw err
+    throw "User.doesEmailExist: " + err;
   }
+}
 
+// backend
+
+User.uploadAvatar = async function(file, user){
+  // let img = fs.readFileSync(file.myAvatar);
+  // let encode_image = img.toString('base64');
+
+  let finalImg = {
+    contentType: file.myAvatar.mimetype,
+    image: file.myAvatar.data
+  }
+  // update database document with avatar
+  let filter = {_id: new ObjectId(user._id)};
+  let updateDoc = {
+    $set: {
+      avatar: finalImg
+    }
+  };
+  let options = {upsert: false};
+  try{
+    await usersCollection.updateOne(filter, updateDoc, options);
+  }catch(err){
+    throw "User.uploadAvatar: " + err;
+  }
+  
+}
+
+User.renderAvatar = async function(user){
+  try{
+    // find document containing binData img
+    let userRec = await usersCollection.findOne({_id: ObjectId(user)});
+    if(userRec.avatar){
+    //return contentType and base64 image string for EJS template
+    return {contentType: userRec.avatar.contentType, image: userRec.avatar.image.toString('base64')};
+    }
+  }catch(err){
+    throw "User.renderAvatar: " + err;
+  }
 }
 
 User.prototype.cleanup = function(){
@@ -58,7 +98,7 @@ User.prototype.cleanup = function(){
       password: this.data.password
     }
   }catch(err){
-    console.log("model function error: "+err);
+    throw "model function error: " + err;
   }
 };
 
@@ -130,7 +170,7 @@ User.prototype.register = async function() {
       await usersCollection.insertOne(this.data);
     }
   }catch(err){
-    throw err;
+    throw "User.prototype.register: " + err;
   }
 };
 
@@ -142,6 +182,15 @@ User.prototype.login = async function(){
     }else{
       throw "Invalid Login/Password.";
     }
+
+    if(userRecord.avatar){
+      return true;
+      console.log(userRecord.avatar);
+    }else{
+      return false;
+      console.log(userRecord.avatar);
+    }
+
   }catch(err){
     throw err + "." + " Please try again later.";
   }

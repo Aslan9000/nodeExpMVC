@@ -5,7 +5,15 @@
     <%- include('partials/flash') %>
 
     <h1>Dashboard Template</h1>
+    <h3>Welcome,<%= user.username %>, please choose your user avatar.</h3>
 
+    <form action="/createAvatar" enctype="multipart/form-data" method="POST" id="uploadAvForm">
+        Select Profile Avatar: <input type="file" name="myAvatar" accept="image/*" />
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input id="uploadPhotoBtn" class="btn btn-outline-danger" type="submit" value="Upload Photo" />
+    </form>
+    
 </div>
 
 <%- include('partials/footer') %>
+

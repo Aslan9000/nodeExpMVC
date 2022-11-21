@@ -1,12 +1,5 @@
 Node Express MVC Application with Login and Autentication
 
-1. Set up server
-2. Set up routes, views, and controllers
-3. Set up and connect to database
-4. Create model for user registration
-5. Create login and autentication for users
-6. Create sessions and logging out
-
 Frontend css: 
 font-awesome
 bootstrap
@@ -24,7 +17,7 @@ Database:
 mongodb
 
 CSRF: 
-? (find a new package)
+csurf(depreceated, need to find new package)
 
 Webpack:
 bundle frontend files
@@ -34,3 +27,18 @@ concurrently
 
 Password Hashing: 
 bcryptjs
+
+Avatar User Upload:
+express-fileupload
+
+Ajax:
+axios
+form-data
+
+
+
+
+?_csrf=<%= csrfToken %>
+  
+
+        
